@@ -77,6 +77,7 @@ pattern recognition and image analysis.
 - `patspec()`      : Pattern spectrum (also known as granulometric size density).
 - `plot()`         : Plot a function.
 - `randomcolor()`  : Apply a random color table to a gray-scale image.
+- `regionprops()`  : Evaluate properties of labeles regions (like area, majoraxis etc..)
 - `regmax()`       : Regional Maximum.
 - `regmin()`       : Regional Minimum (with generalized dynamics).
 - `se2hmt()`       : Create a Hit-or-Miss Template (or interval) from a pair of structuring elements.
@@ -188,6 +189,7 @@ __all__ = \
     ,'openth'
     ,'opentransf'
     ,'patspec'
+    ,'regionprops'
     ,'regmax'
     ,'regmin'
     ,'se2interval'
@@ -2884,6 +2886,113 @@ def patspec(f, type='octagon', n=65535, Bc=None, Buser=None):
     h = h[1:]
     return h
 
+def regionprops(f, properties=['all']):
+    """
+    y = regionprops(f, properties=['all'])
+    
+    Calculate properties for labeles regions.
+    
+    `regionsprops` expects a labeles image `f` and computes the 
+    properties for each label. 
+    Detailed definitions of the properties can be found here:
+    http://www.mathworks.de/help/toolbox/images/ref/regionprops.html
+    Code originates in the work of Soren Hauberg in Octave (2010)
+    
+    Parameters
+    ----------
+    f:          Labeled image.
+    properties: List of properties to calculate
+                List may include:
+                    Shape Measurements
+                        'Area', 'EulerNumber', 'Orientation', 'BoundingBox', 
+                        'Extent', 'Perimeter', 'Centroid', 'Extrema', 
+                        'PixelIdxList', 'ConvexArea', 'FilledArea', 
+                        'PixelList', 'ConvexHull', 'FilledImage', 
+                        'Solidity', 'ConvexImage', 'Image', 'SubarrayIdx', 
+                        'Eccentricity', 'MajorAxisLength', 'EquivDiameter', 
+                        'MinorAxisLength'
+                    Pixel Value Measurements
+                        'MaxIntensity', 'MinIntensity', 'WeightedCentroid', 
+                        'MeanIntensity', 'PixelValues'
+    """
+    import numpy as np
+    f = np.uint(f)
+    if 'all' in properties or 'All' in properties:
+        properties = ['Area', 'EulerNumber', 'Orientation', 'BoundingBox', 
+                        'Extent', 'Perimeter', 'Centroid', 'Extrema', 
+                        'PixelIdxList', 'ConvexArea', 'FilledArea', 
+                        'PixelList', 'ConvexHull', 'FilledImage', 
+                        'Solidity', 'ConvexImage', 'Image', 'SubarrayIdx', 
+                        'Eccentricity', 'MajorAxisLength', 'EquivDiameter', 
+                        'MinorAxisLength', 'MaxIntensity', 'MinIntensity', 
+                        'WeightedCentroid', 'MeanIntensity', 'PixelValues']
+    properties = [p.lower() for p in properties if type(p)==str]
+    regions = [dict.fromkeys(properties) for i in range(int(f.max()+1))]
+    
+    # TODO: do some checks on f and properties
+    
+    for i in range(len(regions)):
+        # Compute standard properties
+        r = (f==i)
+        regions[i]['PixelIdxList'] = np.where(r)
+        X, Y = regions[i]['PixelIdxList']
+        regions[i]['Image'] = r[min(X):max(X), min(Y):max(Y)]
+        regions[i]['PixelList'] = [Y, X]
+        regions[i]['Centroid'] = [regions[i]['PixelIdxList'][0].mean(), regions[i]['PixelIdxList'][1].mean()]
+        regions[i]['BoundingBox'] = [min(X)-0.5, min(Y)-0.5, max(X)-min(X)+1, max(Y)-min(Y)+1]
+        regions[i]['Area'] = np.sum(r)
+        # Compute additional properties
+        if 'extent' in properties:
+            regions[i]['Extent'] = regions[i]['Area'] / (regions[i]['BoundingBox'][2] * regions[i]['BoundingBox'][3])
+        if 'maxintensity' in properties:
+            regions[i]['MaxIntensity'] = max(f[r][:])
+        if 'minintensity' in properties:
+            regions[i]['MinIntensity'] = min(f[r][:])
+        if 'weightedcentroid' in properties:
+            vals = f[r][:]
+            vals /= sum(vals)
+            regions[i]['WeightedCentroid'] = [np.dot(Y, vals), np.dot(X, vals)]
+        if 'meanintensity' in properties:
+            regions[i]['MeanIntensity'] = np.mean(f[r][:])
+        if 'pixelvalues' in properties:
+            regions[i]['PixelValues'] = f[r]
+        if 'orientation' in properties or 'majoraxislength' in properties or 'minoraxislength' in properties:
+            if (len(Y) > 1):
+                C = np.cov([X[:], Y[:]])
+                l, V = np.linalg.eig(C)
+                d = np.diag(l)
+                max_idx = d.argmax(0)
+                max_val = d[max_idx]
+                v = V[:,max_idx]
+                regions[i]['Orientation'] = 180 - 180 * np.arctan2 (v[1], v[0]) / np.pi
+                regions[i]['MajorAxisLength'] = max(l)
+                regions[i]['MinorAxisLength'] = min(l)
+            else:
+                regions[i]['Orientation'] = 0
+                regions[i]['MajorAxisLength'] = 1
+                regions[i]['MinorAxisLength'] = 1
+    
+    """
+    # Compute the properties
+    for prop in properties:
+        if prop = 'eulernumber':
+            pass
+        if prop = 'perimeter':
+            pass
+        if prop = 'filledarea':
+            pass
+        if prop = 'filledimage':
+            pass
+      #case "extrema"
+      #case "convexarea"      
+      #case "convexhull"
+      #case "solidity"
+      #case "conveximage"
+      #case "subarrayidx"
+      #case "eccentricity"
+      #case "equivdiameter"
+    """
+    return regions
 
 def regmax(f, Bc=None):
     """

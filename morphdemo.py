@@ -749,11 +749,11 @@ def brain():
     print '''
     d = subm(a,c);
     show(d);
-    e = cmp(d,'>=',uint8(50));
+    e = cmp(d,'>=',numpy.uint8(50));
     show(e);'''
     d = subm(a,c);
     show(d);
-    e = cmp(d,'>=',uint8(50));
+    e = cmp(d,'>=',numpy.uint8(50));
     show(e);
     print
     raw_input(4*' '+'Please press return to continue...')
@@ -3231,6 +3231,99 @@ def potatoes():
     return
 # =========================================================================
 #
+#   regions - Find regions in test image and classify them.
+#
+# =========================================================================
+def regions():
+
+    from matplotlib import pyplot as plt
+    plt.ion()
+    print
+    print '''Find regions in test image and classify them.'''
+    print
+    #
+    print '========================================================================='
+    print '''
+    The input image is read.
+    '''
+    print '========================================================================='
+    #0
+    print '''
+    a = readgray('regions2.png');
+    show(a);'''
+    a = 1 - readgray('regions2.png')[:,:,0];
+    show(a);
+    print
+    raw_input(4*' '+'Please press return to continue...')
+    print
+    print
+    ##
+    print '========================================================================='
+    print '''
+    Convert to binary objects by thresholding
+    '''
+    print '========================================================================='
+    #0
+    print '''
+    b = threshad(a,.5);
+    show(b);'''
+    b = threshad(a,.5);
+    show(b);
+    print
+    raw_input(4*' '+'Please press return to continue...')
+    print
+    print
+    ##
+    print '========================================================================='
+    print '''
+    Label regions
+    '''
+    print '========================================================================='
+    #0
+    print '''
+    c = label(b,sebox())
+    show(c)'''
+    c = label(b,sebox())
+    print c.max(), c.min()
+    plt.imshow(c)
+    plt.draw()
+    print
+    raw_input(4*' '+'Please press return to continue...')
+    print
+    print
+    ##
+    print '========================================================================='
+    print '''
+    Get properties of regions
+    '''
+    print '========================================================================='
+    #0
+    print '''
+    d = regionprops(c,['All'])
+    print "There are %d regions in image." % (len(d)-1)
+    print '#\tArea\tBB\tCentre\tOrientation'
+    print '========================================================'
+    for i in range(1,len(d)):
+        print '%d\t%d\t%s\t%s\t%s' %(i,d[i]['Area'],str(d[i]['BoundingBox']),str(d[i]['Centroid']),str(d[i]['Orientation']))'''
+    d = regionprops(c,['All'])
+    print "There are %d regions in image." % (len(d)-1)
+    print '#\tArea\tBB\tCentre\tOrientation'
+    print '========================================================'
+    plt.hold(True)
+    for i in range(1,len(d)):
+        plt.plot(d[i]['Centroid'][1],d[i]['Centroid'][0],'wo')
+        print '%d\t%d\t%s\t%s\t%s' %(i,d[i]['Area'],str(d[i]['BoundingBox']),str(d[i]['Centroid']),str(d[i]['Orientation']))
+    plt.xlim((0,c.shape[1]))
+    plt.ylim((c.shape[0],0))
+    plt.hold(False)
+    print
+    raw_input(4*' '+'Please press return to continue...')
+    print
+    print
+    #
+    return
+# =========================================================================
+#
 #   robotop - Detect marks on a robot.
 #
 # =========================================================================
@@ -3606,6 +3699,7 @@ _alldemos = [
     'pcb',
     'pieces',
     'potatoes',
+    'regions',
     'robotop',
     'ruler',
     'soil',
