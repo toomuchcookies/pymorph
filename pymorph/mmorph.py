@@ -2958,15 +2958,24 @@ def regionprops(f, properties=['all']):
             regions[i]['PixelValues'] = f[r]
         if 'orientation' in properties or 'majoraxislength' in properties or 'minoraxislength' in properties:
             if (len(Y) > 1):
-                C = np.cov([X[:], Y[:]])
+                X_ = X[:] - X[:].mean()
+                Y_ = Y[:] - Y[:].mean()
+                C = np.cov(X_,Y_)
                 l, V = np.linalg.eig(C)
-                d = np.diag(l)
-                max_idx = d.argmax(0)
-                max_val = d[max_idx]
+                max_idx = l.argmax()
                 v = V[:,max_idx]
-                regions[i]['Orientation'] = 180 - 180 * np.arctan2 (v[1], v[0]) / np.pi
-                regions[i]['MajorAxisLength'] = max(l)
-                regions[i]['MinorAxisLength'] = min(l)
+                regions[i]['Orientation'] = 180 - 180 * np.arctan2 (v[0], v[1]) / np.pi
+                # Axislengths histogram based
+                # cutoff 5% off either side
+                XX = np.array([X_,Y_])
+                XX1 = V.T.dot(XX)
+                XX1x = sorted(XX1[1,:])
+                XX1y = sorted(XX1[0,:])
+                mylen = int(.25*len(XX1x)/100)
+                XX1x = XX1x[mylen:len(XX1x)-mylen]
+                XX1y = XX1y[mylen:len(XX1y)-mylen]
+                regions[i]['MajorAxisLength'] = max(XX1x) - min(XX1x)
+                regions[i]['MinorAxisLength'] = max(XX1y) - min(XX1y)
             else:
                 regions[i]['Orientation'] = 0
                 regions[i]['MajorAxisLength'] = 1
